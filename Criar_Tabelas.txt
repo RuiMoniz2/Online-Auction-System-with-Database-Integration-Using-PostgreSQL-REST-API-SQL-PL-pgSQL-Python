@@ -1,0 +1,96 @@
+
+
+CREATE TABLE leiloes (
+	id Serial,
+	time_criacao TIMESTAMP NOT NULL,
+	time_termino TIMESTAMP NOT NULL,
+	valor_minimo BIGINT NOT NULL,
+	valor_atual	 BIGINT NOT NULL DEFAULT 0,
+	terminado	 BOOL NOT NULL DEFAULT false,
+	cancelado	 BOOL NOT NULL DEFAULT false,
+	vendido	 BOOL NOT NULL DEFAULT false,
+	titulo	 BIGINT NOT NULL,
+	descricao	 BIGINT NOT NULL,
+	users_id	 BIGINT NOT NULL,
+	artigos_ean	 BIGINT NOT NULL,
+	PRIMARY KEY(id)
+);
+
+CREATE TABLE artigos (
+	ean Serial,
+	nome	 VARCHAR(50) NOT NULL,
+	descricao VARCHAR(512),
+	PRIMARY KEY(ean)
+);
+
+CREATE TABLE users (
+	id Serial,
+	username	 VARCHAR(25) UNIQUE NOT NULL,
+	password	 VARCHAR(50) NOT NULL,
+	banido		 BOOL NOT NULL DEFAULT false,
+	nome		 VARCHAR(512) NOT NULL,
+	e_mail		 VARCHAR(100) UNIQUE NOT NULL,
+	sexo		 CHAR(1) NOT NULL,
+	data_nascimento DATE NOT NULL,
+	morada		 VARCHAR(512),
+	PRIMARY KEY(id)
+);
+
+CREATE TABLE licitacoes (
+	n Serial,
+	valor	 BIGINT NOT NULL,
+	tempo	 TIMESTAMP NOT NULL,
+	valida	 BOOL NOT NULL DEFAULT true,
+	users_id	 BIGINT NOT NULL,
+	leiloes_id BIGINT NOT NULL,
+	PRIMARY KEY(n)
+);
+
+CREATE TABLE mensagens (
+	n Serial,
+	tempo	 TIMESTAMP NOT NULL,
+	texto	 VARCHAR(512) NOT NULL,
+	users_id	 BIGINT NOT NULL,
+	leiloes_id BIGINT NOT NULL,
+	PRIMARY KEY(n)
+);
+
+CREATE TABLE descricao (
+	n Serial,
+	tempo	 TIMESTAMP NOT NULL,
+	texto	 VARCHAR(512) NOT NULL,
+	leiloes_id BIGINT NOT NULL,
+	PRIMARY KEY(n)
+);
+
+CREATE TABLE titulos (
+	n Serial,
+	tempo	 TIMESTAMP NOT NULL,
+	texto	 VARCHAR(100) NOT NULL,
+	leiloes_id BIGINT NOT NULL,
+	PRIMARY KEY(n)
+);
+
+CREATE TABLE notificacoes (
+	n Serial,
+	tempo TIMESTAMP NOT NULL,
+	texto VARCHAR(512) NOT NULL,
+	PRIMARY KEY(n)
+);
+
+CREATE TABLE notificacoes_users (
+	notificacoes_n BIGINT,
+	users_id	 BIGINT,
+	PRIMARY KEY(notificacoes_n,users_id)
+);
+
+ALTER TABLE leiloes ADD CONSTRAINT leiloes_fk1 FOREIGN KEY (users_id) REFERENCES users(id);
+ALTER TABLE leiloes ADD CONSTRAINT leiloes_fk2 FOREIGN KEY (artigos_ean) REFERENCES artigos(ean);
+ALTER TABLE licitacoes ADD CONSTRAINT licitacoes_fk1 FOREIGN KEY (users_id) REFERENCES users(id);
+ALTER TABLE licitacoes ADD CONSTRAINT licitacoes_fk2 FOREIGN KEY (leiloes_id) REFERENCES leiloes(id);
+ALTER TABLE mensagens ADD CONSTRAINT mensagens_fk1 FOREIGN KEY (users_id) REFERENCES users(id);
+ALTER TABLE mensagens ADD CONSTRAINT mensagens_fk2 FOREIGN KEY (leiloes_id) REFERENCES leiloes(id);
+ALTER TABLE descricao ADD CONSTRAINT descricao_fk1 FOREIGN KEY (leiloes_id) REFERENCES leiloes(id);
+ALTER TABLE titulos ADD CONSTRAINT titulos_fk1 FOREIGN KEY (leiloes_id) REFERENCES leiloes(id);
+ALTER TABLE notificacoes_users ADD CONSTRAINT notificacoes_users_fk1 FOREIGN KEY (notificacoes_n) REFERENCES notificacoes(n);
+ALTER TABLE notificacoes_users ADD CONSTRAINT notificacoes_users_fk2 FOREIGN KEY (users_id) REFERENCES users(id);

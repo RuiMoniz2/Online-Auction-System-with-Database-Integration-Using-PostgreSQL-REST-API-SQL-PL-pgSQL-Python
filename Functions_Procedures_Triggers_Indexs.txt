@@ -1,0 +1,1077 @@
+CREATE OR REPLACE FUNCTION public.confirmarlicitacao(IN value bigint,IN idleilao bigint,IN iduser bigint)
+    RETURNS boolean
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+
+begin
+if exists(select * from leiloes where leiloes.id=idLeilao and leiloes.valor_atual <value and leiloes.time_termino> DATE_TRUNC('second', CURRENT_TIMESTAMP::timestamp) and leiloes.valor_minimo<=value and leiloes.users_id != iduser and leiloes.terminado=FALSE)
+   then
+   call dolicitacao(value,iduser,idleilao);
+   return TRUE;
+else 
+   return FALSE;
+end if;
+end
+
+;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.confirmchangedescript(IN userid bigint,IN leilaoid bigint,IN texto text)
+    RETURNS boolean
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+
+begin
+    if exists(select * from leiloes
+    where leiloes.users_id=userid
+    and leiloes.id=leilaoid)
+    then 
+    call adddescription(texto,leilaoid,userid);
+    return TRUE;
+    else
+    return FALSE;
+    end if;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.confirmchangetitle(IN userid bigint,IN leilaoid bigint,IN texto text)
+    RETURNS boolean
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+
+begin
+    if exists(select * from leiloes
+    where leiloes.users_id=userID
+    and leiloes.id=leilaoID)
+    then 
+    call addtitle(texto,leilaoid,userid);
+    return TRUE;
+    else
+    return FALSE;
+    end if;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.criarutilizador(IN username text,IN password text,IN nome text,IN email text,IN sexo character,IN datanasc timestamp without time zone,IN morada text)
+    RETURNS bigint
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+    maxid bigInt;
+begin
+    LOCK TABLE users IN EXCLUSIVE MODE;
+    call createuser(username, password, nome, email, sexo, datanasc, morada);
+    SELECT MAX(id) INTO maxid
+    FROM users;
+    return maxid;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.inserirartigo(IN nomeartigo text,IN descricaoartigo text)
+    RETURNS bigint
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+    eanArtigo bigInt;
+begin
+	LOCK TABLE artigos IN EXCLUSIVE MODE;
+    call addartigo(nomeArtigo,descricaoArtigo);
+    SELECT MAX(ean) INTO eanArtigo
+    FROM artigos;
+    return eanArtigo;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.inserirleilao(IN time_criacao timestamp without time zone,IN time_termino timestamp without time zone,IN valor_minimo integer,IN users_id bigint,IN artigos_ean bigint,IN title text,IN description text)
+    RETURNS bigint
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+    idLeilao bigInt;
+begin
+    LOCK TABLE leiloes IN EXCLUSIVE MODE;
+    call addleilao(time_criacao,time_termino,valor_minimo,users_id,artigos_ean,title,description);
+    SELECT MAX(id) INTO idLeilao
+    FROM leiloes;
+    return idLeilao;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.inserirmensagem(IN mensagem text,IN idleilao bigint,IN iduser bigint)
+    RETURNS boolean
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+
+begin
+    if exists(select * from leiloes where leiloes.id=idLeilao)
+    then
+    call addmessage(mensagem,idLeilao,idUser);
+    return TRUE;
+    else
+    return FALSE;
+    end if;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.login(IN usern text,IN pass text)
+    RETURNS bigint
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+    passCerta text;
+    userID bigint;
+begin
+    SELECT password,id
+    INTO passCerta,userID
+    FROM users
+    WHERE username = userN;
+    if pass = passCerta then
+        return userID;
+    else
+        return -1;
+    end if;
+exception
+    when no_data_found then 
+        return FALSE;
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.maxdescricao()
+    RETURNS bigint
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+    nDescricao bigInt;
+begin
+    SELECT MAX(n) INTO nDescricao
+    FROM descricao;
+    return nDescricao;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.maxleilao()
+    RETURNS bigint
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+    nLeilao bigInt;
+begin
+    SELECT MAX(id) INTO nLeilao
+    FROM leiloes;
+    return nLeilao;
+
+end;
+$BODY$;
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.maxlicitacao()
+    RETURNS bigint
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+    nLicitacao bigInt;
+begin
+    SELECT MAX(n) INTO nLicitacao
+    FROM licitacoes;
+    return nLicitacao;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.maxtitulo()
+    RETURNS bigint
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100
+    
+AS $BODY$
+declare 
+    nTitulo bigInt;
+begin
+    SELECT MAX(n) INTO nTitulo
+    FROM titulos;
+    return nTitulo;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.searchleilaoativo()
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where leiloes.terminado = False
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchleilaopdescartigoativos(IN descartigo text)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where UPPER(artigos.descricao) LIKE UPPER(descArtigo)
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo
+	and leiloes.terminado = FALSE;
+ 
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.searchleilaopdescript(IN descript text)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where UPPER(descricao.texto) LIKE UPPER(descript)
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo;
+
+end;
+$BODY$;
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.searchleilaopean(IN numero integer)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where leiloes.artigos_ean = numero
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchleilaopeanativos(IN numero integer)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where leiloes.artigos_ean = numero
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo
+	and leiloes.terminado = FALSE;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchleilaopid(IN numero integer)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where leiloes.id = numero
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.searchleilaoplicitacao(IN minimo bigint,IN maximo bigint)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where leiloes.valor_atual >= minimo AND leiloes.valor_atual <= maximo
+
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchleilaopnomeartigo(IN nomeartigo text)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where UPPER(artigos.nome) LIKE UPPER(nomeArtigo)
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo;
+
+end;
+$BODY$;
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchleilaopnomeartigoativos(IN nomeartigo text)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where UPPER(artigos.nome) LIKE UPPER(nomeArtigo)
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo
+	and leiloes.terminado = FALSE;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchleilaoptitle(IN title text)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where UPPER(titulos.texto) LIKE UPPER(title)
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo;
+
+end;
+$BODY$;
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchleilaopuser(IN nomeuser text)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin 
+return query
+    select leiloes.id, titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users,descricao
+    where UPPER(users.username) LIKE UPPER(nomeUser)
+    and leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchleiloesatividade(IN userid integer)
+    RETURNS TABLE(id integer, titulo character varying, artigo character varying, time_criacao timestamp without time zone, time_termino timestamp without time zone, valor_minimo bigint, valor_atual bigint, terminado boolean, cancelado boolean, vendido boolean, username character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+return query
+    select distinct(leiloes.id), titulos.texto, artigos.nome, leiloes.time_criacao, leiloes.time_termino, leiloes.valor_minimo, leiloes.valor_atual, leiloes.terminado, leiloes.cancelado, leiloes.vendido, users.username, descricao.texto
+    from leiloes, artigos, titulos, users, descricao, licitacoes
+    where leiloes.descricao= descricao.n
+    and leiloes.artigos_ean = artigos.ean 
+    and leiloes.users_id = users.id 
+    and titulos.n = leiloes.titulo
+    and (userID = leiloes.users_id 
+        or (licitacoes.users_id = userID and licitacoes.leiloes_id = leiloes.id)
+        );
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.searchnotifications(IN iduser bigint)
+    RETURNS TABLE(tempo timestamp without time zone, notification character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+
+AS $BODY$
+begin
+return query
+    select notificacoes.tempo, notificacoes.texto
+    from notificacoes, notificacoes_users
+    where notificacoes_users.notificacoes_n=notificacoes.n
+    and notificacoes_users.users_id=idUser;
+
+end;
+$BODY$;
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+CREATE OR REPLACE FUNCTION public.showartigos()
+    RETURNS TABLE(ean integer, nome character varying, descricao character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin 
+return query
+    select artigos.ean,artigos.nome,artigos.descricao
+    from artigos;
+ 
+end;
+$BODY$;
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.showlicitacoes(IN idleilao bigint)
+    RETURNS TABLE(dataehora timestamp without time zone, username character varying, valor bigint)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin
+    return query
+    select licitacoes.tempo,users.username,licitacoes.valor
+    from licitacoes,users
+    where  licitacoes.leiloes_id=idLeilao
+    and users.id= licitacoes.users_id;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.showmensagens(IN idleilao bigint)
+    RETURNS TABLE(horamessage timestamp without time zone, username character varying, textomensagem character varying)
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    PARALLEL UNSAFE
+    COST 100    ROWS 1000 
+    
+AS $BODY$
+begin 
+    return query
+    select mensagens.tempo,users.username,mensagens.texto
+    from mensagens,users
+    where mensagens.leiloes_id=idLeilao
+    and users.id=mensagens.users_id;
+
+end;
+$BODY$;
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE PROCEDURE public.addartigo(IN namee text, IN description text)
+    LANGUAGE 'plpgsql'
+    
+AS $BODY$
+
+begin
+
+INSERT INTO artigos (nome,descricao)
+VALUES (namee,description);
+
+end;
+$BODY$;
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE public.adddescription(IN description text, IN idleilao bigint, IN iduser bigint)
+    LANGUAGE 'plpgsql'
+    
+AS $BODY$
+declare 
+    nDescricao bigInt;
+begin
+LOCK TABLE descricao IN EXCLUSIVE MODE;
+INSERT INTO descricao (tempo, texto, leiloes_id)
+VALUES (DATE_TRUNC('second', CURRENT_TIMESTAMP::timestamp),description,idLeilao);
+
+nDescricao=maxdescricao();
+
+UPDATE leiloes
+SET descricao = nDescricao
+WHERE id = idLeilao;
+
+end;
+$BODY$;
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE public.addleilao(IN time_criacao timestamp without time zone, IN time_termino timestamp without time zone, IN valor_minimo integer, IN users_id bigint, IN artigos_ean bigint, IN title text, IN description text)
+    LANGUAGE 'plpgsql'
+    
+AS $BODY$
+declare 
+    nDescricao bigInt;
+    nLeilao bigInt;
+    nTitulo bigInt;
+begin
+
+LOCK TABLE leiloes, titulos, descricao IN EXCLUSIVE MODE;
+
+INSERT INTO leiloes (time_criacao, time_termino, valor_minimo, valor_atual, terminado, cancelado, vendido, titulo, descricao, users_id, artigos_ean) 
+VALUES (time_Criacao,time_Termino,valor_Minimo,0,FALSE,FALSE,FALSE,0,0,users_Id,artigos_Ean);
+
+nLeilao=maxleilao();
+
+INSERT INTO titulos (tempo, texto, leiloes_id)
+VALUES (time_Criacao,title,nLeilao);
+
+INSERT INTO descricao (tempo, texto, leiloes_id)
+VALUES (time_Criacao, description, nLeilao);
+
+nTitulo=maxtitulo();
+nDescricao=maxdescricao();
+
+UPDATE leiloes
+SET titulo = nTitulo,
+    descricao = nDescricao
+WHERE id = nLeilao;
+
+end;
+$BODY$;
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE public.addmessage(IN message text, IN idleilao bigint, IN iduser bigint)
+    LANGUAGE 'plpgsql'
+    
+AS $BODY$
+
+begin
+
+INSERT INTO mensagens (tempo, texto,users_id,leiloes_id)
+VALUES (DATE_TRUNC('second', CURRENT_TIMESTAMP::timestamp),message,idUser,idLeilao);
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE PROCEDURE public.addtitle(IN title text, IN idleilao bigint, IN iduser bigint)
+    LANGUAGE 'plpgsql'
+    
+AS $BODY$
+declare 
+    nTitulo bigInt;
+begin
+LOCK TABLE titulos IN EXCLUSIVE MODE;
+INSERT INTO titulos (tempo, texto, leiloes_id)
+VALUES (DATE_TRUNC('second', CURRENT_TIMESTAMP::timestamp),title,idLeilao);
+
+nTitulo=maxtitulo();
+
+UPDATE leiloes
+SET titulo = nTitulo
+WHERE id = idLeilao;
+
+end;
+$BODY$;
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE PROCEDURE public.createuser(IN username text, IN password text, IN nome text, IN email text, IN sexo character, IN datanasc timestamp without time zone, IN morada text)
+    LANGUAGE 'plpgsql'
+    
+AS $BODY$
+declare 
+
+begin
+
+INSERT INTO users (username, password, banido,nome,e_mail,sexo,data_nascimento,morada)
+VALUES (Username,Password,FALSE,Nome,Email,Sexo,dataNasc,Morada);
+
+end;
+$BODY$;
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE PROCEDURE public.dolicitacao(IN valor bigint, IN userid bigint, IN idleilao bigint)
+    LANGUAGE 'plpgsql'
+    
+AS $BODY$
+declare 
+    nLicitacao bigInt;
+begin
+LOCK TABLE licitacoes IN EXCLUSIVE MODE;
+INSERT INTO licitacoes (valor, tempo, valida,users_id,leiloes_id)
+VALUES (Valor,DATE_TRUNC('second', CURRENT_TIMESTAMP::timestamp),TRUE,userID,idLeilao);
+
+nLicitacao=maxlicitacao();
+
+UPDATE leiloes
+SET valor_atual = Valor
+WHERE id = idLeilao;
+
+end;
+$BODY$;
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+CREATE OR REPLACE FUNCTION public.triggerfunction()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    COST 100
+AS $BODY$
+declare
+idLeilao bigint;
+idlastLicitacao bigint;
+idLastUser bigint;
+idlastNotification bigint;
+linha record;
+
+begin
+
+insert into notificacoes (tempo, texto)
+values (DATE_TRUNC('second', CURRENT_TIMESTAMP::timestamp),'Licitaçao Feita');
+ 
+select max(n) into idLastNotification
+from notificacoes;
+
+select max(n) into idlastLicitacao
+from licitacoes;
+
+select licitacoes.users_id into idLastUser
+from licitacoes
+where licitacoes.n=idLastLicitacao;
+
+select licitacoes.leiloes_id into idLeilao
+from licitacoes
+where licitacoes.n=idlastLicitacao;
+
+ FOR linha in (select distinct(licitacoes.users_id) 
+    From licitacoes
+    where licitacoes.leiloes_id=idLeilao) 
+    LOOP
+        insert into notificacoes_users(notificacoes_n,users_id)
+ 
+         values(idlastNotification,linha.users_id);
+    END LOOP;
+
+  delete 
+ from notificacoes_users
+ where notificacoes_users.users_id=idLastUser
+ and notificacoes_users.notificacoes_n=idLastNotification;
+ 
+return linha;
+end;
+$BODY$;
+
+
+
+
+
+CREATE  TRIGGER addnotification
+    AFTER  INSERT ON licitacoes
+    execute function triggerfunction();
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+CREATE OR REPLACE FUNCTION public.triggerfunction()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    COST 100
+AS $BODY$
+declare
+idLeilao bigint;
+idlastLicitacao bigint;
+idLastUser bigint;
+idlastNotification bigint;
+linha record;
+
+begin
+LOCK TABLE notificacoes IN EXCLUSIVE MODE;
+        update leiloes
+        set terminado=True
+        where time_termino<=CURRENT_TIMESTAMP;
+insert into notificacoes (tempo, texto)
+values (DATE_TRUNC('second', CURRENT_TIMESTAMP::timestamp),'');
+ 
+select max(n) into idLastNotification
+from notificacoes;
+
+select max(n) into idlastLicitacao
+from licitacoes;
+
+select licitacoes.users_id into idLastUser
+from licitacoes
+where licitacoes.n=idLastLicitacao;
+
+select licitacoes.leiloes_id into idLeilao
+from licitacoes
+where licitacoes.n=idlastLicitacao;
+
+ FOR linha in (select distinct(licitacoes.users_id) 
+    From licitacoes
+    where licitacoes.leiloes_id=idLeilao) 
+    LOOP
+        insert into notificacoes_users(notificacoes_n,users_id)
+ 
+         values(idlastNotification,linha.users_id);
+    END LOOP;
+
+  delete 
+ from notificacoes_users
+ where notificacoes_users.users_id=idLastUser
+ and notificacoes_users.notificacoes_n=idLastNotification;
+ update notificacoes
+ set texto=CONCAT('FOI FEITA UMA LICITAÇÃO NO LEILÃO ',idLeilao)
+ where notificacoes.n=idlastNotification;
+
+return linha;
+end;
+$BODY$;
+
+
+CREATE  TRIGGER addnotification
+    AFTER  INSERT ON licitacoes
+    execute function triggerfunction();
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+CREATE OR REPLACE FUNCTION public.triggerfunctionMensagens()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+    VOLATILE
+    COST 100
+AS $BODY$
+declare
+idLeilao bigint;
+idlastLicitacao bigint;
+idLastUser bigint;
+idlastNotification bigint;
+linha record;
+
+begin
+LOCK TABLE notificacoes IN EXCLUSIVE MODE;
+
+insert into notificacoes (tempo, texto)
+values (DATE_TRUNC('second', CURRENT_TIMESTAMP::timestamp),'');
+ 
+select max(n) into idLastNotification
+from notificacoes;
+
+
+select mensagens.users_id into idLastUser
+from mensagens
+where mensagens.n=idLastLicitacao;
+
+select mensagens.leiloes_id into idLeilao
+from mensagens
+where mensagens.n=idlastLicitacao;
+
+ FOR linha in (select distinct(mensagens.users_id) 
+    From mensagens
+    where mensagens.leiloes_id=idLeilao) 
+    LOOP
+        insert into notificacoes_users(notificacoes_n,users_id)
+ 
+         values(idlastNotification,linha.users_id);
+    END LOOP;
+
+  delete 
+ from notificacoes_users
+ where notificacoes_users.users_id=idLastUser
+ and notificacoes_users.notificacoes_n=idLastNotification;
+ update notificacoes
+ set texto=CONCAT('FOI INSERIDA UMA MENSAGEM NO LEILAO ' ,idLeilao)
+ where notificacoes.n=idLastNotification;
+
+return linha;
+end;
+$BODY$;
+
+
+CREATE  TRIGGER addmensagem
+    AFTER  INSERT ON mensagens
+    execute function triggerfunctionmensagens();
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+CREATE INDEX ON artigos(ean);
+
+CREATE INDEX ON descricao(n);
+CREATE INDEX ON descricao(leiloes_id);
+
+CREATE INDEX ON leiloes(id);
+CREATE INDEX ON leiloes(terminado);
+CREATE INDEX ON leiloes(users_id);
+CREATE INDEX ON leiloes(artigos_ean);
+
+CREATE INDEX ON licitacoes(n);
+CREATE INDEX ON licitacoes(users_id);
+CREATE INDEX ON licitacoes(leiloes_id);
+
+CREATE INDEX ON mensagens(n);
+CREATE INDEX ON mensagens(users_id);
+CREATE INDEX ON mensagens(leiloes_id);
+
+CREATE INDEX ON notificacoes(n);
+
+CREATE INDEX ON notificacoes_users(users_id);
+
+CREATE INDEX ON titulos(n);
+
+CREATE INDEX ON users(id);
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
