@@ -2,16 +2,6 @@
 ## Project Overview
 The goal of this project is to develop an online auction system with a database backend, utilizing PostgreSQL as the transactional DBMS. The system follows a distributed database application architecture and provides a REST API for seamless interaction. The project emphasizes the use of SQL and PL/pgSQL for server-side programming and implements various strategies for managing transactions, concurrency conflicts, and database security.
 
-## Objectives
-By completing this project, students will achieve the following objectives:
-
-Understand the organization, planning, and execution of a database application development project.
-Master the creation of conceptual and physical data models to support and persist application data.
-Design, implement, test, and deploy a database system with PostgreSQL.
-Install, configure, manage, and optimize PostgreSQL as the relational DBMS.
-Gain proficiency in client and server-side programming using SQL and PL/pgSQL.
-Implement error detection, avoidance, and mitigation strategies.
-Provide comprehensive documentation for the developed system.
 ## Features Implemented
 The project includes the following features:
 
